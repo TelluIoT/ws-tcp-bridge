@@ -9,11 +9,18 @@ var argv = require('optimist')
 			.describe('lport','port to listen for connections on.')
 			.demand('rhost')
 			.describe('rhost','address to forward the connection to.')
+			.boolean('wsbinary')
+			.default('wsbinary', true)
+			.describe('wsbinary', 'forward binary from websocket to socket')
+			.boolean('wstext')
+			.default('wstext', true)
+			.describe('wstext', 'forward text from websocket to socket')
 			.demand('method')
 			.describe('method','either tcp2ws or ws2tcp').argv;
 
 
 var wsMask = (argv.method == 'tcp2ws');
+var {wsbinary, wstext} = argv;
 
 function initSocketCallbacks(state,ws,s) {
 
@@ -79,6 +86,10 @@ function initSocketCallbacks(state,ws,s) {
 	});
 
 	ws.on('message', function(m,flags) {
+		if (((typeof m === 'string') && !wstext) ||
+				(m instanceof Buffer && !wsbinary)) {
+			return;
+		}
 		if(!state.sReady) {
 			state.sBuffer.push(m);
 		} else {
